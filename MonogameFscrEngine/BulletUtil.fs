@@ -38,7 +38,6 @@ module Bullet =
       let body = new RigidBody(new RigidBodyConstructionInfo(mass, new DefaultMotionState(mtx),box , localIne));
       body.MotionState.WorldTransform <- mtx
       //body.SetDamping
-      debugWrite <|body.ToString()
       world.AddRigidBody( body )
       body
     member t.ClearWorld() =

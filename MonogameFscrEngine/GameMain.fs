@@ -19,6 +19,14 @@ open MonoEng.Entity
    member t.Rotate y =
      view <- view * Matrix.CreateRotationY y
 
+  type GameImpl(device) =
+    // init後に呼ばれる別クラス noneにしなくてすむ
+    let model = MMD.TestCSVModel.test device
+    let m = new MyraFsModule.MyraFacade(device)
+    member t.Draw(time:GameTime) view proj =
+      model.Draw view proj
+      m.Render()
+    
 //module GameMain =
   type GameEng() as t=
     inherit Game()
@@ -32,8 +40,8 @@ open MonoEng.Entity
     let mutable initedTime = 0
     let unWrapWorld() = world.Value
     let camera = new Camera()
-    let mutable myra = None
     let mutable inited = false
+    let mutable gameImpl = None
     do
       t.Content.RootDirectory <- "Content"
       t.Window.AllowUserResizing <- true
@@ -43,8 +51,7 @@ open MonoEng.Entity
       let debugRen = new MGDebugRenderer.DebugRender(t.GraphicsDevice)
       debugRenderer <- Some <| debugRen
       world <- Some <|new World( MGBullet.vec3 0.0f -9.8f  0.0f , Some debugRen )
-      let m = new MyraFsModule.MyraFacade(t.GraphicsDevice)
-      myra <- Some <| m
+      gameImpl <- Some <| new GameImpl (t.GraphicsDevice)
 
     member t.Init(time:GameTime) =
 
@@ -121,7 +128,8 @@ open MonoEng.Entity
     override t.Draw(time) =
       let dev = t.GraphicsDevice.Handle :?> SharpDX.Direct3D11.Device
       t.GraphicsDevice.Clear(Color.GreenYellow)
-      attempt myra (fun m->m.Render())
+      attempt gameImpl (fun g->g.Draw time camera.View camera.Proj )
+
       for i in actorList do
         i.Draw time camera.View camera.Proj
       unWrapWorld().Draw(time)

@@ -7,6 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="testcube.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="MyraFsModule.fs" />
     <Compile Include="PathDrawer.fs" />
     <Compile Include="GPUEnum.fs" />
@@ -20,6 +23,8 @@
     <Compile Include="GameMain.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="BulletSharp.NetCore" Version="1.0.0" />

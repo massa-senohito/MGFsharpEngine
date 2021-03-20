@@ -88,8 +88,6 @@ module Entity =
       mtx.M22 <- scale.Y
       mtx.M33 <- scale.Z
       actor.SetWorld <| MGBullet.mtxToMono mtx
-      if actor.Name = "ground" then
-        body.MotionState.WorldTransform.Origin.ToString() |> debugWrite
 
     override t.Draw (time:GameTime) (view:Matrix) (proj:Matrix) = ()
     override t.SetWorld worldMtx =
@@ -110,6 +108,14 @@ module Entity =
           effect.View <- view;
           effect.Projection <- proj;
           effect.DiffuseColor <- new Vector3( 1.0f , 1.0f , 0.0f );
+          effect.LightingEnabled <- true
+          effect.EnableDefaultLighting()
+          //effect.DiffuseColor <- new Vector3(0.5f,0.5f,0.5f)
+          //effect.DirectionalLight0.Direction <- new Vector3(0.1f,0.5f,0.8f)
+          //effect.DirectionalLight0.DiffuseColor <- new Vector3(0.1f,0.5f,0.8f)
+          //effect.DirectionalLight0.Enabled <- true
+          //effect.SpecularColor <- new Vector3(0.0f,1.0f,0.0f)
+
         mesh.Draw()
     override t.SetWorld world = ()
  

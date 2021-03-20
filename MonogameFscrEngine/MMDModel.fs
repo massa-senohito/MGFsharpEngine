@@ -1,4 +1,71 @@
 ﻿namespace MMD
+open Microsoft.Xna.Framework
+open System.IO
+open Microsoft.Xna.Framework.Graphics
+
+module TestCSVModel =
+  type ModelBuffer (device) =
+    let mutable (vBuf:VertexBuffer) = null
+    let mutable (iBuf:IndexBuffer) = null
+    let effect = new BasicEffect(device)
+    
+    member t.MakeVBuf (vList:float32 array) (indList:int array) = 
+      let bind = // new VertexDeclaration(velem,nelem , uvelem)
+        //VertexPositionColorTexture.VertexDeclaration
+        VertexPositionNormalTexture.VertexDeclaration
+      if vBuf <> null then
+        vBuf.Dispose()
+      vBuf <- new VertexBuffer(device ,bind , vList.Length / 8 , BufferUsage.WriteOnly)
+      vBuf.SetData(vList)
+      let indCount = Array.length indList
+      let bitSize = if indCount > 65535 then IndexElementSize.SixteenBits else IndexElementSize.ThirtyTwoBits
+      if iBuf <> null then
+        iBuf.Dispose()
+      iBuf <- new IndexBuffer(device , bitSize , indCount , BufferUsage.WriteOnly)
+      iBuf.SetData(indList)
+    member this.Draw view proj =
+      if vBuf <> null then
+        device.SetVertexBuffer(vBuf)
+        device.Indices <-(iBuf)
+        effect.World <- Matrix.Identity
+        effect.View <- view
+        effect.Projection <- proj
+        effect.LightingEnabled <- true
+        effect.EnableDefaultLighting()
+        effect.TextureEnabled <- false
+        //effect.DiffuseColor <- new Vector3(0.5f,0.5f,0.5f)
+        //effect.DirectionalLight0.Direction <- new Vector3(0.1f,0.5f,0.8f)
+        //effect.DirectionalLight0.DiffuseColor <- new Vector3(0.1f,0.5f,0.8f)
+        //effect.DirectionalLight0.Enabled <- true
+        //effect.SpecularColor <- new Vector3(0.0f,1.0f,0.0f)
+        try
+          for i in effect.CurrentTechnique.Passes do
+            i.Apply()
+            device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0 , iBuf.IndexCount / 3);
+        with e -> System.Diagnostics.Debug.WriteLine e
+  let loadCSV path = 
+    let lines = File.ReadAllLines path
+    let csvDatas = [for i in lines -> [for s  in i.Split "," -> s]]
+    let mutable verts = []
+    let mutable inds = []
+    for line in csvDatas do
+      if line.[0] = "Vertex" then
+        verts <- verts @ [float32 line.[2] ; float32 line.[3] ; float32 line.[4] ;
+                          //1.14437e-28f
+                          float32 line.[5] ; float32 line.[6] ; float32 line.[7] ;
+                          float32 line.[9] ; float32 line.[10]  ;
+                          ]
+
+      if line.[0] = "Face" then
+        inds <- inds @ [int line.[5] ; int line.[4] ; int line.[3]]
+    verts |>List.toArray,inds |> List.toArray
+  let loadModel path device=
+    let buf = new ModelBuffer(device)
+    let vert,ind = loadCSV path
+    buf.MakeVBuf vert ind
+    buf
+  let test device = loadModel @"testcube.csv" device
+
 (*
 module MMDModel=
   let loadFromAssem typ path =
