@@ -15,7 +15,7 @@ type Tester()=
       System.Diagnostics.Debug.WriteLine(body.MotionState.WorldTransform.Origin)
 [<EntryPoint;STAThread>]
 let main argv =
-    new Tester()
+    //new Tester()
     use game = new GameEng()
     game.Run();
     0 // return an integer exit code

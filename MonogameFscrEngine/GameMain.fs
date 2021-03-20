@@ -32,6 +32,7 @@ open MonoEng.Entity
     let mutable initedTime = 0
     let unWrapWorld() = world.Value
     let camera = new Camera()
+    let mutable myra = None
     let mutable inited = false
     do
       t.Content.RootDirectory <- "Content"
@@ -42,8 +43,11 @@ open MonoEng.Entity
       let debugRen = new MGDebugRenderer.DebugRender(t.GraphicsDevice)
       debugRenderer <- Some <| debugRen
       world <- Some <|new World( MGBullet.vec3 0.0f -9.8f  0.0f , Some debugRen )
+      let m = new MyraFsModule.MyraFacade(t.GraphicsDevice)
+      myra <- Some <| m
 
     member t.Init(time:GameTime) =
+
       actorList <- []
       let world = unWrapWorld()
       world.ClearWorld()
@@ -117,6 +121,7 @@ open MonoEng.Entity
     override t.Draw(time) =
       let dev = t.GraphicsDevice.Handle :?> SharpDX.Direct3D11.Device
       t.GraphicsDevice.Clear(Color.GreenYellow)
+      attempt myra (fun m->m.Render())
       for i in actorList do
         i.Draw time camera.View camera.Proj
       unWrapWorld().Draw(time)

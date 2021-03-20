@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="MyraFsModule.fs" />
     <Compile Include="PathDrawer.fs" />
     <Compile Include="GPUEnum.fs" />
     <Compile Include="GPUUtil.fs" />
@@ -25,6 +26,7 @@
     <PackageReference Include="MonoGame.Extended" Version="3.8.0" />
     <PackageReference Include="MonoGame.Framework.Portable" Version="3.7.1.189" />
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.0.1641" />
-    <PackageReference Include="Myra" Version="1.2.3" />
+    <PackageReference Include="Myra.Content.Pipeline" Version="0.5.6.113" />
+    <PackageReference Include="Myra.PlatformAgnostic" Version="1.2.3" />
   </ItemGroup>
 </Project>
