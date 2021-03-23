@@ -3,12 +3,14 @@ open Microsoft.Xna.Framework.Graphics;
 open Microsoft.Xna.Framework;
 open Myra
 open Myra.Platform
+open Myra.Graphics2D
 open Myra.Graphics2D.UI
 open System.Numerics
 open Microsoft.Xna.Framework.Input
 
 //open MyraUI.TextureUtil
 module MyraFsModule=
+  type IDisposable = System.IDisposable
   let toXNAMtx (matrix:Matrix3x2) =
     let mutable result = Matrix.Identity
     result.M11 <- matrix.M11;
@@ -26,6 +28,8 @@ module MyraFsModule=
   let nullableRect r = new System.Nullable<Rectangle>(r)
   let nullRect = new System.Nullable<Rectangle>()
   let nullMtx = new System.Nullable<Matrix3x2>()
+  let inline nullable (v:'a) = new System.Nullable<'a>(v)
+
   type Rend ( device: GraphicsDevice)=
     let batch = new SpriteBatch(device )
     let mutable began = false
@@ -100,7 +104,12 @@ module MyraFsModule=
 
   type Plat(  device:GraphicsDevice ) =
     let viewSize = new System.Drawing.Point( device.Viewport.Width, device.Viewport.Height )
-
+    let mutable texList = []
+    interface IDisposable with
+      override this.Dispose() =
+        for i in texList do
+          let d = i :> IDisposable
+          i.Dispose()
     interface IMyraPlatform with
       member t.CreateRenderer() =
         new Rend (device) :> IMyraRenderer
@@ -132,46 +141,63 @@ module MyraFsModule=
       member t.SetTextureData(texture, bounds, data) =
         let xnaTex = texture :?> Texture2D
         xnaTex.SetData (0, bounds |>toXNARect, data, 0, bounds.Width * bounds.Height * 4)
+        texList <- xnaTex :: texList
       // todo Clearを入れる
       //member t.Clear
+
+  let createLabel x y =
+    let lab = new Label()
+    lab.Margin <- new Thickness(x,y)
+    lab
+  let createButton x y =
+    let lab = new TextButton()
+    lab.Margin <- new Thickness(x,y)
+    lab
+
+  let createProgressBar x y w h =
+    let prog = new HorizontalProgressBar()
+    prog.Width <-  nullable w
+    prog.Height <- nullable h
+    prog.Margin <- new Thickness(x,y)
+    prog
+
+  let grid() = 
+    let g = new Grid()
+    //g.RowSpacing <- 10
+    //g.ColumnSpacing <- 10
+    //g.ColumnsProportions.Add(new Proportion(ProportionType.Auto))
+    //g.ColumnsProportions.Add(new Proportion(ProportionType.Auto))
+    // partなら画面を占める割合で設定する
+    //g.RowsProportions.Add(new Proportion(ProportionType.Part))
+    //g.RowsProportions.Add(new Proportion(ProportionType.Auto))
+    //g.Widgets.Add <| hello()
+    //g.Widgets.Add <| helloBu()
+    //g.Widgets.Add <| progress()
+    g
+
+  let addWidget (g:Grid) (w:Widget)=
+    g.Widgets.Add w
+  let addRowPart (g:Grid) =
+    g.RowsProportions.Add ( new Proportion (ProportionType.Part))
+  let addColumnPart (g:Grid) =
+    g.ColumnsProportions.Add ( new Proportion (ProportionType.Part))
+
   type MyraFacade(device:GraphicsDevice) =
     let desktop = new Desktop()
-    let hello() =
-      let lab = new Label()
-      lab.Id <- "label"
-      lab.Text <- "Hello,"
-      lab
-    let helloBu() =
-      let lab = new TextButton()
-      lab.Id <- "label"
-      lab.GridColumn <- 1
-      lab.GridRow <- 1
-      lab.Text <- "Hello,"
-      lab
-
-    let grid() = 
-      let g = new Grid()
-      g.RowSpacing <- 4
-      g.ColumnSpacing <- 4
-      g.ColumnsProportions.Add(new Proportion(ProportionType.Auto))
-      g.ColumnsProportions.Add(new Proportion(ProportionType.Auto))
-      g.RowsProportions.Add(new Proportion(ProportionType.Auto))
-      g.RowsProportions.Add(new Proportion(ProportionType.Auto))
-      g.Widgets.Add <| hello()
-      g.Widgets.Add <| helloBu()
-      g
-
+    let viewSize = new System.Drawing.Point( device.Viewport.Width, device.Viewport.Height )
+    
+    let plat = new Plat(device)
     do
-      let viewSize = new System.Drawing.Point( device.Viewport.Width, device.Viewport.Height )
-      System.Diagnostics. Debug.WriteLine viewSize
-      
-      let plat = new Plat(device)
-
       MyraEnvironment.Platform <- plat :> IMyraPlatform
-      desktop.Root <- grid()
+    member t.SetRoot r =
+      desktop.Root <- r
 
     member t.Update() =
       ()
     member t.Render() =
       desktop.Render()
       ()
+    interface IDisposable with
+      member this.Dispose() =
+        let d = plat :> IDisposable
+        d.Dispose()

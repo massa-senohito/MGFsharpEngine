@@ -1,7 +1,17 @@
 ﻿namespace MonoEng
 open Microsoft.Xna.Framework.Graphics
+module MXFUtil =
+
+  let defaultDepthStencil = 
+    let d =new DepthStencilState()
+    d.DepthBufferEnable <- true
+    d.DepthBufferFunction <- CompareFunction.LessEqual
+    d
+  let useDefaultDepth (device:GraphicsDevice)=
+    device.DepthStencilState <- defaultDepthStencil
+
 open SharpDX.Direct3D11
-module GPUUtil =
+module SDXUtil =
   let r32Typeless = SharpDX.DXGI.Format.R32_Typeless
   //let skinBuf device = new Buffer(device,)
   let bufDec sizeByte usage bind cpu option stride =

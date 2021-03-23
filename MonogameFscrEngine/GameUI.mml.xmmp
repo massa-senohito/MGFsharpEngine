@@ -1,0 +1,5 @@
+<Project>
+  <Grid>
+    <HorizontalProgressBar Width="700" Height="20" Margin="100, 0, 0, 120" />
+  </Grid>
+</Project>

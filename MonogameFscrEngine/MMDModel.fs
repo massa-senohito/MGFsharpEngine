@@ -33,16 +33,15 @@ module TestCSVModel =
         effect.LightingEnabled <- true
         effect.EnableDefaultLighting()
         effect.TextureEnabled <- false
-        //effect.DiffuseColor <- new Vector3(0.5f,0.5f,0.5f)
+        effect.DiffuseColor <- new Vector3(0.5f,0.5f,0.5f)
         //effect.DirectionalLight0.Direction <- new Vector3(0.1f,0.5f,0.8f)
         //effect.DirectionalLight0.DiffuseColor <- new Vector3(0.1f,0.5f,0.8f)
         //effect.DirectionalLight0.Enabled <- true
         //effect.SpecularColor <- new Vector3(0.0f,1.0f,0.0f)
-        try
-          for i in effect.CurrentTechnique.Passes do
-            i.Apply()
-            device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0 , iBuf.IndexCount / 3);
-        with e -> System.Diagnostics.Debug.WriteLine e
+        MonoEng.MXFUtil.useDefaultDepth effect.GraphicsDevice
+        for i in effect.CurrentTechnique.Passes do
+          i.Apply()
+          device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0 , iBuf.IndexCount / 3);
   let loadCSV path = 
     let lines = File.ReadAllLines path
     let csvDatas = [for i in lines -> [for s  in i.Split "," -> s]]

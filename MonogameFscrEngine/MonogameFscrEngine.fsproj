@@ -7,10 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="MyraFsModule.fs" />
+    <Compile Include="FSTypeInfo.fs" />
     <None Include="testcube.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="MyraFsModule.fs" />
+    <Compile Include="GolfGame.fs" />
     <Compile Include="PathDrawer.fs" />
     <Compile Include="GPUEnum.fs" />
     <Compile Include="GPUUtil.fs" />
@@ -24,10 +26,9 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <ItemGroup />
-
   <ItemGroup>
     <PackageReference Include="BulletSharp.NetCore" Version="1.0.0" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="39.0.0" />
     <PackageReference Include="MonoGame.Extended" Version="3.8.0" />
     <PackageReference Include="MonoGame.Framework.Portable" Version="3.7.1.189" />
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.0.1641" />

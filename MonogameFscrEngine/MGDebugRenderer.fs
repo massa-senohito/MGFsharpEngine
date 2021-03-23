@@ -16,6 +16,7 @@ module MGDebugRenderer =
       vBuf <- new VertexBuffer(device,bind,lineList.Length,BufferUsage.WriteOnly)
       vBuf.SetData(lineList)
     member this.Draw() =
+      MXFUtil.useDefaultDepth device
       if vBuf <> null then
         device.SetVertexBuffer(vBuf)
         for i in effect.CurrentTechnique.Passes do

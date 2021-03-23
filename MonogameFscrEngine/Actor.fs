@@ -104,6 +104,7 @@ module Entity =
       for mesh in model.Meshes do
         for effect in mesh.Effects do
           let effect = effect :?> BasicEffect
+          MXFUtil.useDefaultDepth effect.GraphicsDevice
           effect.World <- actor.World
           effect.View <- view;
           effect.Projection <- proj;

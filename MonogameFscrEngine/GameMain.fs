@@ -22,8 +22,9 @@ open MonoEng.Entity
   type GameImpl(device) =
     // init後に呼ばれる別クラス noneにしなくてすむ
     let model = MMD.TestCSVModel.test device
-    let m = new MyraFsModule.MyraFacade(device)
+    let m = new Game.GameMain.GolfVal(device)//MyraFsModule.MyraFacade(device)
     member t.Draw(time:GameTime) view proj =
+      m.Update(time)
       model.Draw view proj
       m.Render()
     
