@@ -3,7 +3,8 @@ open Microsoft.Xna.Framework;
 open Microsoft.Xna.Framework.Graphics;
 open System.Collections.Generic;
 open System.Linq;
-open MonoGame.Extended
+open MMD.TestCSVModel
+
 module Entity =
 
   let debugWrite s = System.Diagnostics.Debug.WriteLine s
@@ -57,7 +58,7 @@ module Entity =
       for (i:Component) in componentList do
         i.Draw time view proj
 
-  type RigidBodyComponent(actor:Actor , world:MMDEng.Bullet.World , mass) =
+  type RigidBodyComponent(actor:Actor , world:MMDEng.Bullet.World , mass , shapeID) =
     inherit Component()
     let mutable actor = actor
     let setUnitscale (m:Matrix) =
@@ -67,7 +68,7 @@ module Entity =
       mc.M33 <- 1.0f
       mc
     let mutable unitScaleWorld = actor.World |> setUnitscale
-    let body = world.AddBody (MGUtil.mtxToBullet unitScaleWorld) mass
+    let body = world.AddBody (MGUtil.mtxToBullet unitScaleWorld) mass shapeID
     let scaleBody scale =
       // bullet など多くの物理エンジンでは剛体のスケーリングを実装しない そのため衝突形状をスケーリングさせる
       body.CollisionShape.LocalScaling <- MGUtil.toBulletV3 scale
@@ -97,26 +98,65 @@ module Entity =
       let newTra = ref <|MGUtil.mtxToBullet unitScaleWorld
       body.MotionState.SetWorldTransform newTra
 
-  type MeshComponent( actor:Actor , model:Model ) =
+  [<AbstractClass>]
+  type MeshComponentBase() =
     inherit Component()
     override t.Update (time:GameTime) = ()
-    override t.Draw (time:GameTime) (view:Matrix) (proj:Matrix)=
-      for mesh in model.Meshes do
-        for effect in mesh.Effects do
-          let effect = effect :?> BasicEffect
-          MXFUtil.useDefaultDepth effect.GraphicsDevice
-          effect.World <- actor.World
-          effect.View <- view;
-          effect.Projection <- proj;
-          effect.DiffuseColor <- new Vector3( 1.0f , 1.0f , 0.0f );
-          effect.LightingEnabled <- true
-          effect.EnableDefaultLighting()
-          //effect.DiffuseColor <- new Vector3(0.5f,0.5f,0.5f)
-          //effect.DirectionalLight0.Direction <- new Vector3(0.1f,0.5f,0.8f)
-          //effect.DirectionalLight0.DiffuseColor <- new Vector3(0.1f,0.5f,0.8f)
-          //effect.DirectionalLight0.Enabled <- true
-          //effect.SpecularColor <- new Vector3(0.0f,1.0f,0.0f)
-
-        mesh.Draw()
+    override t.Draw (time:GameTime) (view:Matrix) (proj:Matrix)= ()
+    // 物理
     override t.SetWorld world = ()
+    abstract member GetVerts : unit -> Vector3 []
+    abstract member SetVisible : bool -> unit
+    abstract member IsVisible : bool
+
+  type MMDMeshComponent( actor:Actor , model:ModelBuffer)=
+    inherit MeshComponentBase()
+    let mutable isVisible = true
+    override t.Update (time:GameTime) =
+      //debugWrite <| string actor.World.Translation
+      ()
+    override t.Draw (time:GameTime) (view:Matrix) (proj:Matrix)=
+      if isVisible then
+        model.Draw actor.World view proj
+    // 物理
+    override t.SetWorld world = ()
+    override t.GetVerts () = model.GetVerts()
+    override t.IsVisible = isVisible
+    override t.SetVisible visible = isVisible <- visible
+    
+  type MeshComponent( actor:Actor , model:Model ) =
+    inherit MeshComponentBase()
+    let mutable isVisible = true
+    override t.Update (time:GameTime) = ()
+    override t.Draw   (time:GameTime) (view:Matrix) (proj:Matrix)=
+      if isVisible then
+        for mesh in model.Meshes do
+          for effect in mesh.Effects do
+            let effect = effect :?> BasicEffect
+            MXFUtil.useDefaultDepth effect.GraphicsDevice
+            effect.World <- actor.World
+            effect.View  <- view;
+            effect.Projection <- proj;
+            effect.DiffuseColor <- new Vector3( 1.0f , 1.0f , 0.0f );
+            effect.LightingEnabled <- true
+            effect.EnableDefaultLighting()
+            //effect.DiffuseColor <- new Vector3(0.5f,0.5f,0.5f)
+            //effect.DirectionalLight0.Direction <- new Vector3(0.1f,0.5f,0.8f)
+            //effect.DirectionalLight0.DiffuseColor <- new Vector3(0.1f,0.5f,0.8f)
+            //effect.DirectionalLight0.Enabled <- true
+            //effect.SpecularColor <- new Vector3(0.0f,1.0f,0.0f)
+          mesh.Draw()
+    override t.SetWorld world = ()
+    override t.GetVerts () = 
+      let meshList = 
+        [|for i in model.Meshes do
+           for p in i.MeshParts do
+             let (data:VertexPositionNormalTexture array) = Array.zeroCreate p.NumVertices
+             p.VertexBuffer.GetData<VertexPositionNormalTexture>(data,0,p.NumVertices)
+             data |> Array.map (fun v->v.Position)
+        |]
+      meshList |> Array.concat
+    override t.IsVisible = isVisible
+    override t.SetVisible visible = isVisible <- visible
+
  

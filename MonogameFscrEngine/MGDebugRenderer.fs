@@ -2,6 +2,7 @@
 
 open Microsoft.Xna.Framework.Graphics
 open Microsoft.Xna.Framework
+open System.Diagnostics
 
 module MGDebugRenderer =
   type DebugRender(device:GraphicsDevice) =
@@ -18,6 +19,7 @@ module MGDebugRenderer =
     member this.Draw() =
       MXFUtil.useDefaultDepth device
       if vBuf <> null then
+        //Debug.WriteLine "Debug SetVertexBuffer"
         device.SetVertexBuffer(vBuf)
         for i in effect.CurrentTechnique.Passes do
           i.Apply()

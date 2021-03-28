@@ -21,58 +21,74 @@ open MonoEng.Entity
 
   type GameImpl(device) =
     // init後に呼ばれる別クラス noneにしなくてすむ
-    let model = MMD.TestCSVModel.test device
-    let m = new Game.GameMain.GolfVal(device)//MyraFsModule.MyraFacade(device)
+    let myra = new Game.GameMain.GolfVal(device)//MyraFsModule.MyraFacade(device)
+    let debugRen = new MGDebugRenderer.DebugRender(device)
+    let world = new World( MGBullet.vec3 0.0f -9.8f  0.0f , Some debugRen )
+    let model =
+      let actor = new Actor("testCube")
+      let mmdModel = MMD.TestCSVModel.test device
+      let mmdMesh  = new MMDMeshComponent(actor,mmdModel) :> MeshComponentBase
+      let rigid = new RigidBodyComponent(actor , world ,1.0f , ShapeID.Convex (mmdMesh.GetVerts() |> Array.map MGUtil.toBulletV3 ) )
+      //mmdMesh.SetVisible false
+      actor.AddComponent mmdMesh
+      actor.AddComponent rigid
+      actor
     member t.Draw(time:GameTime) view proj =
-      m.Update(time)
-      model.Draw view proj
-      m.Render()
+      myra.Update(time)
+      model.Draw time view proj
+      model.Update time
+      myra.Render()
+    member t.World = world
+    member t.DebugRenderer = debugRen
+    member t.Dispose() =
+      myra.Quit()
     
 //module GameMain =
   type GameEng() as t=
     inherit Game()
     let graphicMan = new GraphicsDeviceManager(t)
-    let mutable ship = None
+    let mutable (ship:Actor option) = None
     let mutable shipModel = null
-    let mutable actorList = []
-    let mutable debugRenderer = None
-    let unWrapDebugRenderer() = debugRenderer.Value
-    let mutable world = None
+    let mutable (actorList:Actor list) = []
     let mutable initedTime = 0
-    let unWrapWorld() = world.Value
     let camera = new Camera()
     let mutable inited = false
-    let mutable gameImpl = None
+    let mutable (gameImpl:GameImpl option) = None
+    let unWrapDebugRenderer() = gameImpl.Value.DebugRenderer
+    let unWrapWorld() = gameImpl.Value.World
     do
       t.Content.RootDirectory <- "Content"
       t.Window.AllowUserResizing <- true
       t.IsMouseVisible <- true
     override t.LoadContent() =
       shipModel <- t.Content.Load<Model>( "Ship" )
-      let debugRen = new MGDebugRenderer.DebugRender(t.GraphicsDevice)
-      debugRenderer <- Some <| debugRen
-      world <- Some <|new World( MGBullet.vec3 0.0f -9.8f  0.0f , Some debugRen )
-      gameImpl <- Some <| new GameImpl (t.GraphicsDevice)
+      gameImpl  <- Some <| new GameImpl (t.GraphicsDevice)
 
     member t.Init(time:GameTime) =
-
       actorList <- []
+
       let world = unWrapWorld()
-      world.ClearWorld()
-      let actor = new Actor("ship")
-      let mesh = new MeshComponent (actor , shipModel)
-      let body = new RigidBodyComponent(actor , world , 1.0f)
+      //world.ClearWorld()
       let ground = new Actor("ground")
       ground.Move 0.0f -7.0f 0.0f
       ground.ScaleX 5.0f
       ground.ScaleY 2.0f
       ground.ScaleZ 5.0f
+      let gbody = new RigidBodyComponent(ground, world , 0.0f, ShapeID.Box)
+      ground.AddComponent gbody
+      actorList <- [
+        ground
+        ]
+
+#if SHIP
+      let actor = new Actor("ship")
+      let mesh = new MeshComponent (actor , shipModel) :> MeshComponentBase
+      let body = new RigidBodyComponent(actor , world , 1.0f , mesh.GetVerts() |> Array.map MGUtil.toBulletV3, ShapeID.Convex)
 
       let gmesh = new MeshComponent (ground, shipModel)
-      let gbody = new RigidBodyComponent(ground, world , 0.0f)
+
       //gbody.SetMovable false
       ground.AddComponent gmesh
-      ground.AddComponent gbody
       actor.AddComponent mesh
       actor.AddComponent body
 
@@ -81,6 +97,7 @@ open MonoEng.Entity
         actor
         ground
         ]
+#endif
       inited <- true
       initedTime <- time.TotalGameTime.Seconds
       ()
@@ -114,11 +131,13 @@ open MonoEng.Entity
         camera.Move <| Vector3.Down * delta * 10f
       if(not inited) then
         t.Init(time)
+#if SHIP
       let ship = ship.Value
       for i in actorList do
         i.Update time
       if(inA) then
         ship.Move -0.1f 0.0f 0.0f
+#endif
       //for i in [0..3] do
       //  let key = Input.GamePad.GetState(i)
       //  let key1 = Input.Joystick.GetState(i)

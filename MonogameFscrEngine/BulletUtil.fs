@@ -2,6 +2,7 @@
 open System
 open BulletSharp
 open MonoEng
+open BulletSharp.Math
 
 module Bullet =
   let debugWrite s = System.Diagnostics.Debug.WriteLine s
@@ -17,6 +18,9 @@ module Bullet =
       //let bp = this.Broadphase 
       //this.CollisionObjectArray.Clear()
       ()
+  type ShapeID =
+    |Box
+    |Convex of Vector3 []
   type World(gravity,debugRenderer:MGDebugRenderer.DebugRender option) =
     let collisionConfiguration = new DefaultCollisionConfiguration();
     let dispatcher = new CollisionDispatcher( collisionConfiguration );
@@ -29,17 +33,28 @@ module Bullet =
       drawer.DebugMode <- DebugDrawModes.All
       world.DebugDrawer <- drawer
 
-    member t.AddBody (mtx:Math.Matrix) mass =
-      let sca = mtx.ScaleVector
-      let box = new BoxShape(sca.X,sca.Y,sca.Z)
+    member t.AddBodyWithShape (mtx:Math.Matrix) mass (shape:CollisionShape) =
       let localIne = Math.Vector3.Zero
       if mass > 0.0f then
-        box.CalculateLocalInertia(mass,ref localIne)
-      let body = new RigidBody(new RigidBodyConstructionInfo(mass, new DefaultMotionState(mtx),box , localIne));
+        shape.CalculateLocalInertia(mass,ref localIne)
+      let body = new RigidBody(new RigidBodyConstructionInfo(mass, new DefaultMotionState(mtx), shape, localIne));
       body.MotionState.WorldTransform <- mtx
-      //body.SetDamping
       world.AddRigidBody( body )
       body
+    member t.AddBoxBody (mtx:Math.Matrix) mass =
+      let sca = mtx.ScaleVector
+      let box = new BoxShape(sca.X,sca.Y,sca.Z)
+      t.AddBodyWithShape mtx mass box
+
+    member t.AddConvexHullBody  (mtx:Math.Matrix) mass (vs:Vector3 array) =
+      let convex = new ConvexHullShape(vs)
+      t.AddBodyWithShape mtx mass convex
+
+    member t.AddBody  (mtx:Math.Matrix) mass shapeID =
+      match shapeID with
+      |Box -> t.AddBoxBody mtx mass
+      |Convex vs -> t.AddConvexHullBody mtx mass vs
+
     member t.ClearWorld() =
       let objCount = world.NumCollisionObjects
       //for i in [0.. objCount - 1 ] do

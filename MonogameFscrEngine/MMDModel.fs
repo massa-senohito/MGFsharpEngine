@@ -1,33 +1,38 @@
 ﻿namespace MMD
 open Microsoft.Xna.Framework
 open System.IO
+open System.Diagnostics
 open Microsoft.Xna.Framework.Graphics
 
 module TestCSVModel =
   type ModelBuffer (device) =
     let mutable (vBuf:VertexBuffer) = null
     let mutable (iBuf:IndexBuffer) = null
+    let mutable verts = [||]
     let effect = new BasicEffect(device)
     
-    member t.MakeVBuf (vList:float32 array) (indList:int array) = 
+    member t.GetVerts () = verts
+    member t.MakeVBuf (vnList:float32 array) (indList:int array) vs =
+      verts <- vs
       let bind = // new VertexDeclaration(velem,nelem , uvelem)
         //VertexPositionColorTexture.VertexDeclaration
         VertexPositionNormalTexture.VertexDeclaration
       if vBuf <> null then
         vBuf.Dispose()
-      vBuf <- new VertexBuffer(device ,bind , vList.Length / 8 , BufferUsage.WriteOnly)
-      vBuf.SetData(vList)
+      vBuf <- new VertexBuffer(device ,bind , vnList.Length / 8 , BufferUsage.WriteOnly)
+      vBuf.SetData(vnList)
       let indCount = Array.length indList
       let bitSize = if indCount > 65535 then IndexElementSize.SixteenBits else IndexElementSize.ThirtyTwoBits
       if iBuf <> null then
         iBuf.Dispose()
       iBuf <- new IndexBuffer(device , bitSize , indCount , BufferUsage.WriteOnly)
       iBuf.SetData(indList)
-    member this.Draw view proj =
+    member this.Draw world view proj =
       if vBuf <> null then
+        Debug.WriteLine "MMD SetVertexBuffer"
         device.SetVertexBuffer(vBuf)
         device.Indices <-(iBuf)
-        effect.World <- Matrix.Identity
+        effect.World <- world
         effect.View <- view
         effect.Projection <- proj
         effect.LightingEnabled <- true
@@ -45,23 +50,26 @@ module TestCSVModel =
   let loadCSV path = 
     let lines = File.ReadAllLines path
     let csvDatas = [for i in lines -> [for s  in i.Split "," -> s]]
+    let mutable vertsWithNorm = []
     let mutable verts = []
     let mutable inds = []
+    // 形状をbullet用に持ってくる
     for line in csvDatas do
       if line.[0] = "Vertex" then
-        verts <- verts @ [float32 line.[2] ; float32 line.[3] ; float32 line.[4] ;
+        vertsWithNorm <- vertsWithNorm @ [float32 line.[2] ; float32 line.[3] ; float32 line.[4] ;
                           //1.14437e-28f
                           float32 line.[5] ; float32 line.[6] ; float32 line.[7] ;
                           float32 line.[9] ; float32 line.[10]  ;
                           ]
+        verts <- verts @ [new Vector3( float32 line.[2] , float32 line.[3] , float32 line.[4] )]
 
       if line.[0] = "Face" then
         inds <- inds @ [int line.[5] ; int line.[4] ; int line.[3]]
-    verts |>List.toArray,inds |> List.toArray
+    vertsWithNorm |>List.toArray,inds |> List.toArray , verts |>List.toArray
   let loadModel path device=
     let buf = new ModelBuffer(device)
-    let vert,ind = loadCSV path
-    buf.MakeVBuf vert ind
+    let vertsWithNorm,ind,verts = loadCSV path
+    buf.MakeVBuf vertsWithNorm ind verts
     buf
   let test device = loadModel @"testcube.csv" device
 
